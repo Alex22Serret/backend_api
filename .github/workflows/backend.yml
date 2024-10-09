@@ -1,0 +1,68 @@
+name: Build and Push Docker Image for Backend API
+
+on:
+  push:
+    branches:
+      - prod  # Ejecutar solo en la rama 'prod'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Notify Slack - Inicio de construcción
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data '{
+          "channel": "#ci-alerts",
+          "text": "Inicio de construcción de la imagen Docker para backend_api..."
+        }' $SLACK_WEBHOOK_URL
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'  # Cambia esto si necesitas otra versión de Python
+
+    - name: Install dependencies
+      working-directory: backend_api
+      run: pip install --no-cache-dir -r requirements.txt
+
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Docker Hub
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+
+    - name: Build Docker image
+      id: build
+      run: docker build -f backend_api/Dockerfile -t alex22serret/backend_api:latest backend_api
+
+    - name: Push Docker image
+      run: docker push alex22serret/backend_api:latest
+
+    - name: Notify Slack - Éxito en construcción
+      if: ${{ success() }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data '{
+          "channel": "#ci-alerts",
+          "text": "La imagen Docker 'backend_api' ha sido construida y subida exitosamente."
+        }' $SLACK_WEBHOOK_URL
+
+    - name: Notify Slack - Error en construcción
+      if: ${{ failure() }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data '{
+          "channel": "#ci-alerts",
+          "text": "Error en la construcción de la imagen Docker 'backend_api'."
+        }' $SLACK_WEBHOOK_URL
