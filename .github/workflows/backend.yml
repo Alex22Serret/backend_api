@@ -3,7 +3,7 @@ name: Build and Push Docker Image for Backend API
 on:
   push:
     branches:
-      - prod  # Ejecutar solo en la rama 'prod'
+      - main  # Ejecutar solo en la rama 'prod'
 
 jobs:
   build:
