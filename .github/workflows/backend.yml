@@ -28,11 +28,7 @@ jobs:
         python-version: '3.10'
 
     - name: Install dependencies
-      run: ls -R
-
-    - name: Install dependencies
-      working-directory: backend_api  # Cambié el './backend_api' a solo 'backend_api'
-      run: pip install --no-cache-dir -r requirements.txt
+      run: pip install --no-cache-dir -r requirements.txt  # Aquí está bien porque `requirements.txt` está en la raíz del proyecto backend_api
 
     - name: Set up Docker
       uses: docker/setup-buildx-action@v2
@@ -45,7 +41,7 @@ jobs:
 
     - name: Build Docker image
       id: build
-      run: docker build -f backend_api/Dockerfile -t alex22serret/backend_api:latest ./backend_api
+      run: docker build -f Dockerfile -t alex22serret/backend_api:latest .  # Aquí usa el Dockerfile directamente en la raíz
 
     - name: Push Docker image
       run: docker push alex22serret/backend_api:latest
