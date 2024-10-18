@@ -12,12 +12,31 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+
+      - name: Notify Slack - Inicio de análisis
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alerts-back",
+            "text": "Inicio de análisis del código"
+          }' $SLACK_WEBHOOK_URL
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Necesario para obtener información del PR, si la hay
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Notify Slack - Fin de análisis
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alerts-back",
+            "text": "Fin del análisis del código"
+          }' $SLACK_WEBHOOK_URL
 
   build:
     runs-on: ubuntu-latest
