@@ -18,7 +18,7 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       run: |
         curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts",
+          "channel": "#ci-alerts-back",
           "text": "Inicio de construcción de la imagen Docker para backend_api..."
         }' $SLACK_WEBHOOK_URL
 
@@ -52,7 +52,7 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       run: |
         curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts",
+          "channel": "#ci-alerts-back",
           "text": "La imagen Docker 'backend_api' ha sido construida y subida exitosamente."
         }' $SLACK_WEBHOOK_URL
 
@@ -62,6 +62,6 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       run: |
         curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts",
+          "channel": "#ci-alerts-back",
           "text": "Error en la construcción de la imagen Docker 'backend_api'."
         }' $SLACK_WEBHOOK_URL
