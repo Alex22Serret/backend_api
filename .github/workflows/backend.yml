@@ -42,7 +42,7 @@ jobs:
 
     - name: Build Docker image
       id: build
-      run: docker build -f backend_api/Dockerfile -t alex22serret/backend_api:latest backend_api
+      run: docker build -f Dockerfile -t alex22serret/backend_api:latest .
 
     - name: Push Docker image
       run: docker push alex22serret/backend_api:latest
