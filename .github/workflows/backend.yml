@@ -1,9 +1,9 @@
-name: Build and Push Docker Image for Backend API
+name: Build, Test, and Push Docker Image for Backend API
 
 on:
   push:
     branches:
-      - main  # Ejecutar solo en la rama 'prod'
+      - prod  # Ejecutar solo en la rama 'prod'
 
 jobs:
   build:
@@ -25,10 +25,10 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10'  # Cambia esto si necesitas otra versión de Python
+        python-version: '3.10'
 
     - name: Install dependencies
-      working-directory: backend_api
+      working-directory: ./backend_api  # Ajustar esta ruta según tu estructura
       run: pip install --no-cache-dir -r requirements.txt
 
     - name: Set up Docker
@@ -42,7 +42,7 @@ jobs:
 
     - name: Build Docker image
       id: build
-      run: docker build -f Dockerfile -t alex22serret/backend_api:latest .
+      run: docker build -f backend_api/Dockerfile -t alex22serret/backend_api:latest ./backend_api
 
     - name: Push Docker image
       run: docker push alex22serret/backend_api:latest
