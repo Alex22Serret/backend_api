@@ -1,99 +1,128 @@
+# Nombre del flujo de trabajo para identificar la tarea en GitHub Actions
 name: Build, Test, and Push Docker Image for Backend API
 
+# Evento que dispara el flujo de trabajo: cada vez que hay un push a la rama "main"
 on:
   push:
     branches:
       - main  
 
+# Definición de trabajos en el flujo de trabajo
 jobs:
+  # Trabajo de análisis de código con SonarCloud
   sonarcloud:
+    # Nombre del trabajo
     name: SonarCloud
+    # Define el sistema operativo para el trabajo (ubuntu-latest)
     runs-on: ubuntu-latest
+    # Pasos a seguir dentro del trabajo
     steps:
+      # Paso 1: Clonar el repositorio completo con historial de commits
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
+      # Paso 2: Notificación en Slack de inicio de análisis
       - name: Notify Slack - Inicio de análisis
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}  # URL del webhook de Slack en secretos
         run: |
+          # Enviar mensaje de inicio de análisis de código a Slack
           curl -X POST -H 'Content-type: application/json' --data '{
             "channel": "#ci-alerts-back",
             "text": "Inicio de análisis del código"
           }' $SLACK_WEBHOOK_URL
 
+      # Paso 3: Realizar el análisis de código en SonarCloud
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Token de GitHub para permisos
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # Token de SonarCloud para autenticación
 
+      # Paso 4: Notificación en Slack de fin de análisis
       - name: Notify Slack - Fin de análisis
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          # Enviar mensaje de finalización de análisis a Slack
           curl -X POST -H 'Content-type: application/json' --data '{
             "channel": "#ci-alerts-back",
             "text": "Fin del análisis del código"
           }' $SLACK_WEBHOOK_URL
 
+  # Trabajo de construcción y publicación de la imagen Docker
   build:
+    # Definir el sistema operativo
     runs-on: ubuntu-latest
 
+    # Pasos del trabajo
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      # Paso 1: Clonar el repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Notify Slack - Inicio de construcción
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts-back",
-          "text": "Inicio de construcción de la imagen Docker para backend_api..."
-        }' $SLACK_WEBHOOK_URL
+      # Paso 2: Notificación en Slack de inicio de construcción
+      - name: Notify Slack - Inicio de construcción
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          # Enviar mensaje de inicio de construcción de Docker a Slack
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alerts-back",
+            "text": "Inicio de construcción de la imagen Docker para backend_api..."
+          }' $SLACK_WEBHOOK_URL
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
+      # Paso 3: Configuración de Python en el ambiente
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'  # Versión de Python a usar
 
-    - name: Install dependencies
-      run: pip install --no-cache-dir -r requirements.txt  # Aquí está bien porque `requirements.txt` está en la raíz del proyecto backend_api
+      # Paso 4: Instalación de dependencias de Python
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt  # Instala las dependencias listadas en requirements.txt
 
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
+      # Paso 5: Configuración de Docker Buildx para construir imágenes multiplataforma
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
 
-    - name: Log in to Docker Hub
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+      # Paso 6: Inicio de sesión en Docker Hub
+      - name: Log in to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}   # Usuario de Docker Hub
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}   # Contraseña de Docker Hub
+        run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
-    - name: Build Docker image
-      id: build
-      run: docker build -f Dockerfile -t alex22serret/backend_api:latest .  # Aquí usa el Dockerfile directamente en la raíz
+      # Paso 7: Construcción de la imagen Docker
+      - name: Build Docker image
+        id: build
+        run: docker build -f Dockerfile -t alex22serret/backend_api:latest .  # Construye la imagen usando el Dockerfile en la raíz
 
-    - name: Push Docker image
-      run: docker push alex22serret/backend_api:latest
+      # Paso 8: Publicación de la imagen Docker en Docker Hub
+      - name: Push Docker image
+        run: docker push alex22serret/backend_api:latest  # Publica la imagen en el repositorio de Docker Hub
 
-    - name: Notify Slack - Éxito en construcción
-      if: ${{ success() }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts-back",
-          "text": "La imagen Docker 'backend_api' ha sido construida y subida exitosamente."
-        }' $SLACK_WEBHOOK_URL
+      # Paso 9: Notificación en Slack si la construcción fue exitosa
+      - name: Notify Slack - Éxito en construcción
+        if: ${{ success() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          # Enviar mensaje de éxito de construcción a Slack
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alerts-back",
+            "text": "La imagen Docker 'backend_api' ha sido construida y subida exitosamente."
+          }' $SLACK_WEBHOOK_URL
 
-    - name: Notify Slack - Error en construcción
-      if: ${{ failure() }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST -H 'Content-type: application/json' --data '{
-          "channel": "#ci-alerts-back",
-          "text": "Error en la construcción de la imagen Docker 'backend_api'."
-        }' $SLACK_WEBHOOK_URL
+      # Paso 10: Notificación en Slack si la construcción falló
+      - name: Notify Slack - Error en construcción
+        if: ${{ failure() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          # Enviar mensaje de error de construcción a Slack
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "#ci-alerts-back",
+            "text": "Error en la construcción de la imagen Docker 'backend_api'."
+          }' $SLACK_WEBHOOK_URL
