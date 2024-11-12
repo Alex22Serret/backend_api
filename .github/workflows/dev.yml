@@ -33,7 +33,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # Notificación final del estado del análisis
+      # Notificación final del estado del análisis!
       - name: Notify Slack - Resultado del análisis
         if: always()
         env:

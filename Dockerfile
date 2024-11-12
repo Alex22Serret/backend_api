@@ -4,7 +4,7 @@ FROM python:3-slim
 # Establecemos el directorio de trabajo en /app
 WORKDIR /app
 
-# Copiamos solo el requirements.txt primero
+# Copiamos solo el requirements.txt primero!
 COPY requirements.txt ./
 
 # Instalamos las dependencias de la aplicación
