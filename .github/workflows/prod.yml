@@ -5,7 +5,7 @@ name: Build, Test, and Push Docker Image for Backend API
 on:
   push:
     branches:
-      - dev  
+      - prod  
 
 # Definición de trabajos en el flujo de trabajo
 jobs:
