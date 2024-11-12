@@ -9,7 +9,7 @@ on:
 
 # Definición de trabajos en el flujo de trabajo
 jobs:
-  # Trabajo de análisis de código con SonarCloud
+  # Trabajo de análisis de código con SonarCloud!
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
