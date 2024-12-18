@@ -3,7 +3,7 @@ name: Build, Test, and Push Docker Image for Backend API
 on:
   push:
     branches:
-      - dev  
+      - dev
 
 jobs:
   sonarcloud:
@@ -73,12 +73,16 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
+      - name: Define Docker image tag
+        id: tag
+        run: echo "image_tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+    
       - name: Build Docker image
         id: build
-        run: docker build -f Dockerfile -t alex22serret/backend_api:latest .
+        run: docker build -f Dockerfile -t alex22serret/backend_api:${{ env.image_tag }} .
 
       - name: Push Docker image
-        run: docker push alex22serret/backend_api:latest
+        run: docker push alex22serret/backend_api:${{ env.image_tag }}
 
       - name: Notify Slack - Resultado de la construcción
         if: always()
