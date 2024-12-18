@@ -1,15 +1,11 @@
-# Nombre del flujo de trabajo para identificar la tarea en GitHub Actions
 name: Build, Test, and Push Docker Image for Backend API
 
-# Evento que dispara el flujo de trabajo: cada vez que hay un push a la rama "prod"
 on:
   push:
     branches:
-      - dev  
+      - prod
 
-# Definición de trabajos en el flujo de trabajo
 jobs:
-  # Trabajo de análisis de código con SonarCloud
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
@@ -33,7 +29,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # Notificación final del estado del análisis!
       - name: Notify Slack - Resultado del análisis
         if: always()
         env:
@@ -46,7 +41,6 @@ jobs:
             "text": "Análisis de código completado con '"$status"'. Ver detalles: '"$url"'"
           }' $SLACK_WEBHOOK_URL
 
-  # Trabajo de construcción y publicación de la imagen Docker
   build:
     runs-on: ubuntu-latest
     steps:
@@ -79,14 +73,17 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
+      - name: Define Docker image tag
+        id: tag
+        run: echo "image_tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+    
       - name: Build Docker image
         id: build
-        run: docker build -f Dockerfile -t alex22serret/backend_api:latest .
+        run: docker build -f Dockerfile -t alex22serret/backend_api:${{ env.image_tag }} .
 
       - name: Push Docker image
-        run: docker push alex22serret/backend_api:latest
+        run: docker push alex22serret/backend_api:${{ env.image_tag }}
 
-      # Notificación final del estado de la construcción
       - name: Notify Slack - Resultado de la construcción
         if: always()
         env:
@@ -98,3 +95,26 @@ jobs:
             "channel": "#ci-alerts-back",
             "text": "Construcción de la imagen Docker para backend_api completada con '"$status"'. Ver detalles: '"$url"'"
           }' $SLACK_WEBHOOK_URL
+
+  deploy:
+    name: Deploy Argo CD with Kustomize
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Configure kubectl
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+        run: |
+          aws eks update-kubeconfig --region us-west-2 --name my-eks-cluster
+
+      - name: Deploy Argo CD with Kustomize
+        run: |
+          kubectl apply -k ./kustomize
